@@ -1,15 +1,21 @@
+import dotenv from "dotenv"
+dotenv.config();
 import express from "express"
 import cors from "cors"
-import dotenv from "dotenv"
-import Mongodbconnnection from "./Database/DbConnection";
+import helmet from "helmet"
+import cookieParser from "cookie-parser";
 
-dotenv.config(); 
+import Mongodbconnnection from "./Database/DbConnection.js";
+import SuperAdminRouter from "./Routes/SuperAdmin.route.js";
+
 const app = express()
 
-// Database connection 
 Mongodbconnnection();
+
+app.use(helmet())
+app.use(cookieParser())
 app.use(cors({
-    origin: true, 
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['x-total-count'],
@@ -20,11 +26,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => {
-    res.send("Service Backend is Running!")
-})
+app.use("/superadmin", SuperAdminRouter);
 
-const PORT = process.env.PORT || 5000; 
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}...`)
