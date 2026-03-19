@@ -7,6 +7,9 @@ import cookieParser from "cookie-parser";
 
 import Mongodbconnnection from "./Database/DbConnection.js";
 import SuperAdminRouter from "./Routes/SuperAdmin.route.js";
+import AdminRoute from "./Routes/Admin.route.js"
+import CategoryRoute from "./Routes/ServiceCategory.route.js";
+import ServiceRouter from "./Routes/Service.route.js"
 
 const app = express()
 
@@ -27,6 +30,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/superadmin", SuperAdminRouter);
+app.use("/admin",AdminRoute);
+app.use("/category",CategoryRoute);
+app.use("/service",ServiceRouter);
 
 const PORT = process.env.PORT || 5000;
 
