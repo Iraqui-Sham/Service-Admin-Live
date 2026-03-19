@@ -15,7 +15,6 @@ export const SuperAdminLogin = async (req, res) => {
         const SAdmin = await SuperAdmin.findOne({ email }).select("+password")
         if (!SAdmin) return res.status(401).json({ success: false, message: "Super Amin Not Found" })
 
-        console.log(password, SAdmin.password)
         const Ismatch = await bcrypt.compare(password, SAdmin.password)
         if (!Ismatch) return res.status(401).json({ success: false, message: "Password Did Not Match" })
 
@@ -47,12 +46,18 @@ export const VerifyOtp = async (req, res) => {
     try {
         const { email, otp } = req.body;
 
-        // OTP check
-        const record = await OTP.findOne({ email, otp });
+        const record = await OTP.findOne({ email });
         if (!record) return res.status(401).json({
             success: false,
             message: "Invalid OTP"
         });
+
+        if (record.otp !== otp) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP ❌"
+            });
+        }
 
         // OTP expiry check
         if (record.expiresAt < Date.now()) {
@@ -68,13 +73,13 @@ export const VerifyOtp = async (req, res) => {
 
         // JWT Tokens
         const accessToken = jwt.sign(
-            { id: admin._id },
+            { id: admin._id, role: admin.role },
             process.env.ACCESS_SECRET,
             { expiresIn: "18h" }
         );
 
         const refreshToken = jwt.sign(
-            { id: admin._id },
+            { id: admin._id, role: admin.role },
             process.env.REFRESH_SECRET,
             { expiresIn: "7d" }
         );
@@ -90,7 +95,7 @@ export const VerifyOtp = async (req, res) => {
         };
 
         if (admin.devices.length >= 2) {
-            admin.devices.shift(); 
+            admin.devices.shift();
         }
 
         admin.devices.push(deviceData);
@@ -111,8 +116,6 @@ export const VerifyOtp = async (req, res) => {
             sameSite: "Strict",
             maxAge: 18 * 60 * 60 * 1000
         });
-
-
         // Response
         res.json({
             success: true,
@@ -131,10 +134,8 @@ export const VerifyOtp = async (req, res) => {
 };
 export const logout = async (req, res) => {
     try {
-        // User ID should come from auth middleware (decoded access token)
-        const userId = req.user.id;
+        const userId = req.params;
 
-        // Get refresh token from cookie
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
             return res.status(400).json({ success: false, message: "No refresh token found" });
@@ -143,11 +144,9 @@ export const logout = async (req, res) => {
         const admin = await SuperAdmin.findById(userId);
         if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
 
-        // Remove the device associated with this refresh token
         admin.devices = admin.devices.filter(d => d.refreshToken !== refreshToken);
         await admin.save();
 
-        // Clear refresh token cookie
         res.clearCookie("refreshToken", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
