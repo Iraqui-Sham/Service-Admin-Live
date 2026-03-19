@@ -14,9 +14,9 @@ export const SuperAdminLogin = async (req, res) => {
 
         const SAdmin = await SuperAdmin.findOne({ email }).select("+password")
         if (!SAdmin) return res.status(401).json({ success: false, message: "Super Amin Not Found" })
-        
-        console.log(password,SAdmin.password)
-        const Ismatch =await bcrypt.compare(password, SAdmin.password)
+
+        console.log(password, SAdmin.password)
+        const Ismatch = await bcrypt.compare(password, SAdmin.password)
         if (!Ismatch) return res.status(401).json({ success: false, message: "Password Did Not Match" })
 
         const otp = crypto.randomInt(100000, 999999);
@@ -89,25 +89,29 @@ export const VerifyOtp = async (req, res) => {
             lastLogin: new Date()
         };
 
-        // Max 2 device logic
         if (admin.devices.length >= 2) {
-            admin.devices.shift(); // oldest device remove
+            admin.devices.shift(); 
         }
 
         admin.devices.push(deviceData);
         admin.lastLogin = new Date();
         await admin.save();
 
-        // Delete OTP after successful login
         await OTP.deleteMany({ email });
 
-        // Cookie set for refresh token
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+            maxAge: 18 * 60 * 60 * 1000
+        });
+
 
         // Response
         res.json({
