@@ -13,5 +13,5 @@ Router.post(
 Router.get("/profile",GetSuperAdmin);
 Router.post("/login",SuperAdminLogin)
 Router.post("/verify/otp",VerifyOtp)
-Router.get("/logout",logout)
+Router.get("/logout/:id",logout)
 export default Router
