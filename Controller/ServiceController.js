@@ -1,5 +1,15 @@
 import ServiceSchema from "../Models/ServiceSchema.js";
 
+const generateSlug = (name) => {
+
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "");
+
+};
+
 export const getAllService = async (req, res) => {
   try {
     const services = await ServiceSchema.find()
@@ -45,6 +55,49 @@ export const getServiceById = async (req, res) => {
   }
 };
 
+export const getServiceBySlug = async (req, res) => {
+
+  try {
+
+    const { slug } = req.params
+
+    const service = await ServiceSchema.findOne({
+      slug
+    })
+
+    if (!service) {
+
+      return res.status(404).json({
+
+        success: false,
+        message: "Service not found"
+
+      })
+
+    }
+
+    return res.status(200).json({
+
+      success: true,
+      data: service
+
+    })
+
+  }
+
+  catch (error) {
+
+    return res.status(500).json({
+
+      success: false,
+      message: error.message
+
+    })
+
+  }
+
+}
+
 export const createService = async (req, res) => {
   try {
     const {
@@ -57,6 +110,7 @@ export const createService = async (req, res) => {
       features,
       location,
     } = req.body;
+    const slug = generateSlug(name)
 
     if (!name || !description || !price) {
       return res.status(400).json({
@@ -65,17 +119,53 @@ export const createService = async (req, res) => {
       });
     }
 
+    const existing = await ServiceSchema.findOne({
+
+      $or: [
+        { name },
+        { slug }
+      ]
+
+    })
+
+    if (existing) {
+
+      return res.status(400).json({
+
+        success: false,
+        message: "Service already exists"
+
+      })
+
+    }
+
     const newService = await ServiceSchema.create({
+
       name,
+
+      slug,
+
       description,
+
       price,
+
       category,
+
       priceType,
+
       duration,
+
       features,
+
       location,
+
       image: req.file?.path || null,
-    });
+
+      isFeatured: req.body.isFeatured || false,
+
+      status: req.body.status || "active"
+
+    })
 
     return res.status(201).json({
       success: true,
